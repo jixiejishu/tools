@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>全能导航</title>
+<style>
+  :root{
+    /* ===== 深色 = 养眼的木色（保留木纹，色调温和明亮不压抑） ===== */
+    --bg0:#5c4033;
+    --bg1:#3e2b1f;
+    --card:rgba(255,243,224,.10);
+    --card-border:rgba(255,224,190,.20);
+    --text:#f5ead5;
+    --muted:#d6c4a8;
+    --accent:#e8b978;
+    --accent2:#c98a4a;
+    --danger:#ff9b7a;
+    --shadow:0 8px 30px rgba(40,24,14,.42);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--text);
+    /* 木纹：底色 + 多层径向/线性渐变模拟年轮与纤维纹理（色调提亮、更养眼） */
+    background:
+      radial-gradient(900px 600px at 18% 8%, rgba(220,165,105,.30), transparent 62%),
+      radial-gradient(750px 520px at 88% 14%, rgba(180,120,70,.28), transparent 60%),
+      radial-gradient(1100px 700px at 50% 105%, rgba(150,95,55,.30), transparent 65%),
+      repeating-linear-gradient(92deg, rgba(255,230,200,.045) 0 3px, transparent 3px 9px),
+      repeating-linear-gradient(2deg, rgba(0,0,0,.09) 0 2px, transparent 2px 7px),
+      linear-gradient(180deg, var(--bg0), var(--bg1));
+    background-attachment:fixed;
+    min-height:100vh;
+    padding:24px 16px 120px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1200px;margin:0 auto;}
+
+  /* ===== Header / Clock ===== */
+  header{text-align:center;margin-bottom:28px;}
+  .logo{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:22px;font-weight:800;letter-spacing:1px;
+    background:linear-gradient(90deg,#f0c98a,#e0a458);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .logo .dot{width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 12px var(--accent);}
+
+  .clock-card{
+    margin:18px auto 0;max-width:340px;
+    background:var(--card);border:1px solid var(--card-border);
+    border-radius:22px;padding:18px;backdrop-filter:blur(12px);
+    box-shadow:var(--shadow);
+  }
+  .clock-top{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;}
+  .analog{position:relative;width:110px;height:110px;flex:0 0 110px;}
+  .analog svg{width:100%;height:100%;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));}
+  .digital{text-align:left;}
+  .digital .time{font-size:34px;font-weight:800;line-height:1;letter-spacing:2px;
+    text-shadow:0 0 18px rgba(224,164,88,.45);}
+  .digital .date{font-size:13px;color:var(--muted);margin-top:6px;}
+  .digital .sec{font-size:13px;color:var(--accent);margin-top:2px;font-weight:700;}
+
+  /* ===== Section ===== */
+  .section{margin-top:30px;}
+  .section-title{
+    display:flex;align-items:center;gap:10px;
+    font-size:17px;font-weight:800;margin-bottom:14px;
+    color:#f0dcbf;
+  }
+  .section-title .bar{width:5px;height:20px;border-radius:4px;background:linear-gradient(180deg,var(--accent),var(--accent2));}
+
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+  /* 大屏 */
+  @media (min-width:900px){ .grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));} }
+
+  .card{
+    position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;padding:20px 12px;min-height:118px;text-align:center;
+    background:var(--card);border:1px solid var(--card-border);border-radius:18px;
+    text-decoration:none;color:var(--text);transition:.25s ease;
+    backdrop-filter:blur(8px);box-shadow:var(--shadow);
+  }
+  .card:hover,.card:focus-visible{transform:translateY(-4px);border-color:rgba(224,164,88,.55);
+    box-shadow:0 14px 40px rgba(224,164,88,.26);outline:none;}
+  .card .icon{font-size:30px;line-height:1;}
+  .card .name{font-size:14.5px;font-weight:700;}
+  .card .desc{font-size:11px;color:var(--muted);word-break:break-all;padding:0 4px;}
+
+  /* ===== Hidden Section Trigger ===== */
+  .lock-area{margin-top:46px;text-align:center;}
+  .lock-hint{font-size:12px;color:var(--muted);margin-bottom:8px;letter-spacing:1px;}
+  .lock-btn{
+    display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+    padding:10px 18px;border-radius:14px;border:1px solid var(--card-border);
+    background:var(--card);color:var(--muted);font-size:13px;backdrop-filter:blur(8px);
+    transition:.2s;
+  }
+  .lock-btn:hover{color:var(--text);border-color:rgba(120,150,255,.5);}
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(5,8,20,.72);backdrop-filter:blur(6px);z-index:99;padding:16px;}
+  .modal-overlay.show{display:flex;}
+  .modal{width:100%;max-width:360px;background:linear-gradient(180deg,#322215,#1f140b);
+    border:1px solid var(--card-border);border-radius:20px;padding:26px 22px;text-align:center;box-shadow:var(--shadow);}
+  .modal h3{font-size:17px;margin-bottom:6px;}
+  .modal p{font-size:12.5px;color:var(--muted);margin-bottom:16px;}
+  .modal input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--card-border);
+    background:rgba(255,255,255,.05);color:var(--text);font-size:16px;text-align:center;letter-spacing:3px;outline:none;}
+  .modal input:focus{border-color:var(--accent);}
+  .modal .row{display:flex;gap:10px;margin-top:16px;}
+  .btn{flex:1;padding:11px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;}
+  .btn-cancel{background:rgba(255,255,255,.08);color:var(--muted);}
+  .btn-ok{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 6px 20px rgba(91,140,255,.4);}
+  .btn:hover{transform:translateY(-1px);}
+  .err{font-size:12px;color:var(--danger);margin-top:10px;min-height:16px;}
+
+  /* 电视/投影仪 大屏适配 */
+  @media (min-width:1400px){
+    body{padding:40px 32px 140px;font-size:18px;}
+    .logo{font-size:28px;}
+    .clock-card{max-width:420px;padding:24px;}
+    .analog{width:140px;height:140px;flex-basis:140px;}
+    .digital .time{font-size:44px;}
+    .digital .date,.digital .sec{font-size:15px;}
+    .section-title{font-size:20px;}
+    .card{padding:26px 14px;min-height:140px;}
+    .card .icon{font-size:38px;}
+    .card .name{font-size:17px;}
+    .card .desc{font-size:13px;}
+  }
+  /* 车机横屏 */
+  @media (max-width:900px) and (orientation:landscape){
+    body{padding:16px 14px 90px;}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+    .card{min-height:96px;padding:14px 8px;}
+    .card .icon{font-size:24px;}
+    .clock-card{max-width:300px;}
+    .analog{width:90px;height:90px;flex-basis:90px;}
+    .digital .time{font-size:28px;}
+  }
+  /* 手机小屏 */
+  @media (max-width:420px){
+    .grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .card{padding:16px 8px;min-height:102px;border-radius:14px;}
+    .card .icon{font-size:26px;}
+    .card .name{font-size:13px;}
+    .analog{width:92px;height:92px;flex-basis:92px;}
+    .digital .time{font-size:28px;}
+  }
+  footer{text-align:center;color:var(--muted);font-size:11px;margin-top:50px;}
+
+  /* ===== 主题切换按钮 ===== */
+  .theme-btn{
+    position:fixed;top:16px;right:16px;z-index:90;
+    width:46px;height:46px;border-radius:50%;border:1px solid var(--card-border);
+    background:var(--card);color:var(--text);font-size:20px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(10px);box-shadow:var(--shadow);transition:.25s;
+  }
+  .theme-btn:hover{transform:scale(1.08);border-color:rgba(120,150,255,.5);}
+
+  /* ===== 浅色主题 = 米白色（暖调柔和米白） ===== */
+  body.light{
+    --bg0:#faf6ee; --bg1:#f3ebdc;
+    --card:rgba(255,255,255,.78);
+    --card-border:rgba(180,160,130,.24);
+    --text:#3d3226; --muted:#8a7a66;
+    --accent:#c9944a; --accent2:#b07d36;
+    --danger:#d9534f;
+    --shadow:0 8px 26px rgba(120,100,70,.12);
+    background:
+      radial-gradient(1200px 800px at 20% -10%, rgba(240,225,195,.45), transparent 60%),
+      radial-gradient(1000px 700px at 110% 10%, rgba(230,215,185,.40), transparent 60%),
+      linear-gradient(180deg, var(--bg0), var(--bg1));
+  }
+  body.light .card:hover,body.light .card:focus-visible{
+    box-shadow:0 14px 40px rgba(201,148,74,.20);}
+  body.light .modal{background:linear-gradient(180deg,#ffffff,#faf5ea);}
+  body.light .theme-btn{background:rgba(255,255,255,.88);}
+
+  /* ===== 隐藏触发（三个齿轮：显示效果相同，仅中间齿轮连续点击 5 次进入） ===== */
+  .lock-area{margin-top:50px;text-align:center;}
+  .lock-icons{display:inline-flex;align-items:center;justify-content:center;gap:60px;}
+  .lock-icon{
+    width:58px;height:58px;border-radius:50%;border:1px solid var(--card-border);
+    background:var(--card);display:inline-flex;align-items:center;justify-content:center;
+    font-size:28px;cursor:default;transition:.25s;backdrop-filter:blur(8px);
+    user-select:none;-webkit-tap-highlight-color:transparent;
+    animation:gearIdle 6s linear infinite;transform-origin:center;
+  }
+  /* 中间可触发齿轮：鼠标悬停无任何特殊显示 */
+  .lock-icons .lock-icon:not(.deco){cursor:pointer;}
+  .lock-icons .lock-icon:not(.deco):hover{filter:none;box-shadow:none;border-color:var(--card-border);}
+  @keyframes gearIdle{to{transform:rotate(360deg);}}
+  @media (max-width:420px){
+    .lock-icon{width:52px;height:52px;font-size:25px;}
+    .lock-icons{gap:12px;}
+  }
+</style>
+</head>
+<body>
+<button class="theme-btn" id="themeBtn" title="切换浅色主题">🌙</button>
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="dot"></span>常用工具导航</div>
+    <div class="clock-card">
+      <div class="clock-top">
+        <div class="analog">
+          <svg viewBox="0 0 120 120">
+            <defs>
+              <radialGradient id="face" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#3a2717"/>
+                <stop offset="100%" stop-color="#211509"/>
+              </radialGradient>
+            </defs>
+            <circle cx="60" cy="60" r="56" fill="url(#face)" stroke="rgba(240,220,190,.20)" stroke-width="2"/>
+            <!-- 刻度 -->
+            <g stroke="rgba(240,220,190,.60)" stroke-width="2" stroke-linecap="round">
+              <line x1="60" y1="10" x2="60" y2="18"/>
+              <line x1="110" y1="60" x2="102" y2="60"/>
+              <line x1="60" y1="110" x2="60" y2="102"/>
+              <line x1="10" y1="60" x2="18" y2="60"/>
+            </g>
+            <g stroke="rgba(240,220,190,.28)" stroke-width="1.4" stroke-linecap="round">
+              <line x1="82.6" y1="22.2" x2="78.6" y2="27.8"/>
+              <line x1="97.8" y1="45" x2="92" y2="46.6"/>
+              <line x1="97.8" y1="75" x2="92" y2="73.4"/>
+              <line x1="82.6" y1="97.8" x2="78.6" y2="92.2"/>
+              <line x1="37.4" y1="97.8" x2="41.4" y2="92.2"/>
+              <line x1="22.2" y1="75" x2="28" y2="73.4"/>
+              <line x1="22.2" y1="45" x2="28" y2="46.6"/>
+              <line x1="37.4" y1="22.2" x2="41.4" y2="27.8"/>
+            </g>
+            <!-- 指针 -->
+            <line id="hour" x1="60" y1="60" x2="60" y2="34" stroke="#f0dcbf" stroke-width="4.5" stroke-linecap="round"/>
+            <line id="min"  x1="60" y1="60" x2="60" y2="22" stroke="#e0c089" stroke-width="3.4" stroke-linecap="round"/>
+            <line id="sec"  x1="60" y1="60" x2="60" y2="16" stroke="#ff8a6b" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="60" cy="60" r="3.6" fill="#ff8a6b"/>
+          </svg>
+        </div>
+        <div class="digital">
+          <div class="time" id="digTime">--:--:--</div>
+          <div class="date" id="digDate">----年--月--日 周-</div>
+          <div class="sec" id="digSec">-- 秒</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 第一类 -->
+  <section class="section">
+    <div class="section-title"><span class="bar"></span>常用搜索工具</div>
+    <div class="grid" id="grid1"></div>
+  </section>
+
+  <!-- 第二类 -->
+  <section class="section">
+    <div class="section-title"><span class="bar"></span>常用导航</div>
+    <div class="grid" id="grid2"></div>
+  </section>
+
+  <!-- 隐藏触发（三个齿轮：仅中间齿轮连续点击 5 次进入，两侧为装饰） -->
+  <div class="lock-area">
+    <div class="lock-icons">
+      <div class="lock-icon deco" title="装饰">⚙️</div>
+      <div class="lock-icon" id="lockTrigger" title="连续点击 5 次解锁">⚙️</div>
+      <div class="lock-icon deco" title="装饰">⚙️</div>
+    </div>
+  </div>
+
+  <!-- 第三类（默认隐藏） -->
+  <section class="section" id="sec3" style="display:none;">
+    <div class="section-title"><span class="bar"></span>工具网站</div>
+    <div class="grid" id="grid3"></div>
+  </section>
+
+  <footer>© 网络搜集资源，感谢各位作者的辛勤劳动与无私奉献！</footer>
+</div>
+
+<!-- 密码弹窗 -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>🔐 输入访问密码</h3>
+    <p>该区域需要密码授权才能访问</p>
+    <input id="pwd" type="password" placeholder="请输入密码" autocomplete="off" inputmode="numeric">
+    <div class="row">
+      <button class="btn btn-cancel" id="btnCancel">取消</button>
+      <button class="btn btn-ok" id="btnOk">确认</button>
+    </div>
+    <div class="err" id="err"></div>
+  </div>
+</div>
+
+<script>
+/* ===== 数据 ===== */
+const DATA1 = [
+  {name:'Bing 搜索', desc:'www.bing.com', url:'https://www.bing.com', icon:'🔍'},
+  {name:'Yandex', desc:'yandex.com', url:'https://yandex.com/', icon:'🌐'},
+  {name:'Google', desc:'google.com', url:'https://www.google.com/?hl=zh_cn', icon:'🟢'},
+];
+const DATA2 = [
+  {name:'常用影音工具', desc:'jxjs.jxjs888666.top', url:'https://jxjs.jxjs888666.top', icon:'🎬'},
+  {name:'影音工具 备用', desc:'tvbox.jxjs888666.top', url:'https://tvbox.jxjs888666.top', icon:'📺'},
+  {name:'常用影音导航', desc:'tvboxpage.jxjs888666.top', url:'https://tvboxpage.jxjs888666.top', icon:'🗺️'},
+  {name:'电脑工具导航', desc:'pc.jxjs888666.top', url:'https://pc.jxjs888666.top', icon:'💻'},
+];
+const DATA3 = [
+  {name:'fanqiang', desc:'github.com/bannedbook/fanqiang', url:'https://github.com/bannedbook/fanqiang', icon:'📡'},
+  {name:'小飞机', desc:'share.feijipan.com', url:'https://share.feijipan.com/s/Yw7ubTue', icon:'✈️'},
+  {name:'127', desc:'www.go127.com/s/7zxum', url:'https://www.go127.com/s/7zxum', icon:'🔑'},
+];
+
+function render(gridId, data){
+  const box = document.getElementById(gridId);
+  box.innerHTML = data.map(d=>`
+    <a class="card" href="${d.url}" target="_blank" rel="noopener noreferrer">
+      <div class="icon">${d.icon}</div>
+      <div class="name">${d.name}</div>
+      <div class="desc">${d.desc}</div>
+    </a>`).join('');
+}
+
+/* ===== 时钟 ===== */
+const $hour=document.getElementById('hour'), $min=document.getElementById('min'),
+      $sec=document.getElementById('sec'), $digTime=document.getElementById('digTime'),
+      $digDate=document.getElementById('digDate'), $digSec=document.getElementById('digSec');
+const WEEK=['日','一','二','三','四','五','六'];
+function tick(){
+  const now=new Date();
+  let h=now.getHours(), m=now.getMinutes(), s=now.getSeconds();
+  const secDeg=s*6, minDeg=m*6+s*0.1, hourDeg=(h%12)*30+m*0.5;
+  $sec.setAttribute('transform',`rotate(${secDeg} 60 60)`);
+  $min.setAttribute('transform',`rotate(${minDeg} 60 60)`);
+  $hour.setAttribute('transform',`rotate(${hourDeg} 60 60)`);
+  const pad=n=>String(n).padStart(2,'0');
+  $digTime.textContent=`${pad(h)}:${pad(m)}:${pad(s)}`;
+  $digSec.textContent=`${pad(s)} 秒`;
+  $digDate.textContent=`${now.getFullYear()}年${pad(now.getMonth()+1)}月${pad(now.getDate())}日 周${WEEK[now.getDay()]}`;
+}
+tick(); setInterval(tick,1000);
+
+/* ===== 隐藏区域：单个齿轮连续点击 5 次 + 密码 ===== */
+const TRIGGER=document.getElementById('lockTrigger'),
+      MODAL=document.getElementById('modal'),
+      PWD=document.getElementById('pwd'), ERR=document.getElementById('err'), SEC3=document.getElementById('sec3');
+const CLICK_TIMEOUT=1500; // 两次点击间隔超过此时间(ms)则计数重置
+let clicks=0, lastClick=0, unlocked=false;
+TRIGGER.addEventListener('click',()=>{
+  const now=Date.now();
+  if(unlocked){SEC3.style.display='block';SEC3.scrollIntoView({behavior:'smooth'});return;}
+  if(now-lastClick>CLICK_TIMEOUT) clicks=0; // 非连续，重置
+  lastClick=now; clicks++;
+  if(clicks>=5){clicks=0;lastClick=0;openModal();}
+});
+function openModal(){ERR.textContent='';PWD.value='';MODAL.classList.add('show');setTimeout(()=>PWD.focus(),100);}
+function closeModal(){MODAL.classList.remove('show');}
+document.getElementById('btnCancel').addEventListener('click',closeModal);
+document.getElementById('btnOk').addEventListener('click',()=>{
+  if(PWD.value==='2026'){unlocked=true;closeModal();SEC3.style.display='block';
+    TRIGGER.textContent='🔓'; TRIGGER.style.animation='none'; TRIGGER.style.cursor='pointer';
+    SEC3.scrollIntoView({behavior:'smooth'});}
+  else{ERR.textContent='密码错误，请重试';PWD.value='';PWD.focus();}
+});
+PWD.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btnOk').click();});
+MODAL.addEventListener('click',e=>{if(e.target===MODAL)closeModal();});
+
+/* ===== 浅色主题切换 ===== */
+const THEME_BTN=document.getElementById('themeBtn');
+THEME_BTN.addEventListener('click',()=>{
+  const light=document.body.classList.toggle('light');
+  THEME_BTN.textContent=light?'🌤️':'🌙';
+  THEME_BTN.title=light?'切换深色主题':'切换浅色主题';
+  try{localStorage.setItem('theme',light?'light':'dark');}catch(e){}
+});
+try{if(localStorage.getItem('theme')==='light'){document.body.classList.add('light');THEME_BTN.textContent='🌤️';THEME_BTN.title='切换深色主题';}}catch(e){}
+
+/* ===== 初始化 ===== */
+render('grid1',DATA1);
+render('grid2',DATA2);
+render('grid3',DATA3);
+</script>
+</body>
+</html>
